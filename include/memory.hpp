@@ -6,12 +6,18 @@
  * VRAM block allocation
  */
 
-
-#ifdef DEBUG
+#ifdef FALSE 
+// #ifdef DEBUG 
     // Use minimal OpenCL implementation for better debugging with valgrind
+
+    // Note(Sam): used include files not included in debugcl.hpp
+    #include "sys/types.h"
+    #include <string>
+
     #include "CL/debugcl.hpp"
+
 #else
-    #include <CL/cl2.hpp>
+    #include <CL/opencl.hpp>
 #endif
 
 #include <memory>
@@ -50,7 +56,10 @@ namespace vram {
         public:
             // Best performance/size balance
             static const size_t size = 128 * 1024;
+            // static const size_t size = 1 * 1024 * 1024;
+            // static const size_t size = 4 * 1024;
 
+            block(cl::Buffer buf);
             block(const block& other) = delete;
 
             ~block();
@@ -63,14 +72,13 @@ namespace vram {
             // Wait for all writes to this block to complete
             void sync();
 
+
         private:
             cl::Buffer buffer;
             cl::Event last_write;
 
             // True until first write (until then it contains leftover data from last use)
             bool dirty = true;
-
-            block();
         };
     }
 }

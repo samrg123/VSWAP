@@ -6,7 +6,7 @@
  */
 
 #define FUSE_USE_VERSION 30
-#include <fuse.h>
+#include <fuse3/fuse.h>
 
 #include <iostream>
 #include <string>
@@ -23,8 +23,11 @@ namespace vram {
             return ret;
         }
 
+        // converts c timespec to fuse_timespec
+        fuse_timespec timeSpec2FuseTimespec(timespec tv);
+
         // Get current time with nanosecond precision
-        timespec time();
+        fuse_timespec time();
 
         // Split path/to/file.txt into "path/to" and "file.txt"
         void split_file_path(const string& path, string& dir, string& file);

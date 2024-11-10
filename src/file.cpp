@@ -1,9 +1,11 @@
 #include "entry.hpp"
 #include "util.hpp"
+#include <fuse3/winfsp_fuse.h>
 
 namespace vram {
     namespace entry {
         file_ref file_t::make(dir_ptr parent, const string& name) {
+                      
             auto file = file_ref(new file_t());
             file->link(parent, name);
             return file;
@@ -48,14 +50,14 @@ namespace vram {
                 auto block = get_block(block_start);
 
                 // Allow multiple threads to block for reading simultaneously
-                wait_mutex.unlock();
+                // wait_mutex.unlock();
                 if (block) {
                     block->read(block_off, read_size, data);
                 } else {
                     // Non-written part of file
                     memset(data, 0, read_size);
                 }
-                wait_mutex.lock();
+                // wait_mutex.lock();
 
                 data += read_size;
                 off += read_size;

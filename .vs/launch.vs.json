@@ -1,0 +1,13 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "build\\vramfs_x64_debug.exe",
+      "projectTarget": "",
+      "name": "vramfs_x64_debug.exe",
+      "args": [ "../tmp/vram", "600M", "-d", "0", "-f" ]
+    }
+  ]
+}

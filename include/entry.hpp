@@ -5,6 +5,8 @@
  * Entry types
  */
 
+#include <fuse3/winfsp_fuse.h>
+
 #include <string>
 #include <memory>
 #include <mutex>
@@ -66,21 +68,21 @@ namespace vram {
             virtual size_t size() const = 0;
 
             // Change file attributes (automatically updates change time)
-            timespec atime() const;
-            timespec mtime() const;
-            timespec ctime() const;
+            fuse_timespec atime() const;
+            fuse_timespec mtime() const;
+            fuse_timespec ctime() const;
 
-            mode_t mode() const;
-            uid_t user() const;
-            gid_t group() const;
+            fuse_fuse_mode_t mode() const;
+            fuse_fuse_uid_t user() const;
+            fuse_gid_t group() const;
 
-            void atime(timespec t);
-            void mtime(timespec t);
-            void ctime(timespec t);
+            void atime(fuse_timespec t);
+            void mtime(fuse_timespec t);
+            void ctime(fuse_timespec t);
 
-            void mode(mode_t mode);
-            void user(uid_t user);
-            void group(gid_t group);
+            void mode(fuse_fuse_mode_t mode);
+            void user(fuse_fuse_uid_t user);
+            void group(fuse_gid_t group);
 
             // Remove link with parent directory
             void unlink();
@@ -100,13 +102,13 @@ namespace vram {
 
             string _name;
 
-            mode_t _mode = 0;
-            uid_t _user = 0;
-            gid_t _group = 0;
+            fuse_fuse_mode_t _mode = 0;
+            fuse_fuse_uid_t _user = 0;
+            fuse_gid_t _group = 0;
 
-            timespec _atime;
-            timespec _mtime;
-            timespec _ctime;
+            fuse_timespec _atime;
+            fuse_timespec _mtime;
+            fuse_timespec _ctime;
         };
 
         // File entry

@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "task-vramfs_x64_debug",
+      "appliesTo": "build/vramfs_x64_debug.exe",
+      "type": "launch"
+    }
+  ]
+}

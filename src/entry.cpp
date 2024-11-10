@@ -41,55 +41,55 @@ namespace vram {
             return _name;
         }
 
-        timespec entry_t::atime() const {
+        fuse_timespec entry_t::atime() const {
             return _atime;
         }
 
-        timespec entry_t::mtime() const {
+        fuse_timespec entry_t::mtime() const {
             return _mtime;
         }
 
-        timespec entry_t::ctime() const {
+        fuse_timespec entry_t::ctime() const {
             return _ctime;
         }
 
-        mode_t entry_t::mode() const {
+        fuse_fuse_mode_t entry_t::mode() const {
             return _mode;
         }
 
-        uid_t entry_t::user() const {
+        fuse_fuse_uid_t entry_t::user() const {
             return _user;
         }
 
-        gid_t entry_t::group() const {
+        fuse_gid_t entry_t::group() const {
             return _group;
         }
 
-        void entry_t::atime(timespec t) {
+        void entry_t::atime(fuse_timespec t) {
             _atime = t;
             ctime(util::time());
         }
 
-        void entry_t::mtime(timespec t) {
+        void entry_t::mtime(fuse_timespec t) {
             _mtime = t;
             ctime(util::time());
         }
 
-        void entry_t::ctime(timespec t) {
+        void entry_t::ctime(fuse_timespec t) {
             _ctime = t;
         }
 
-        void entry_t::mode(mode_t mode) {
+        void entry_t::mode(fuse_fuse_mode_t mode) {
             _mode = mode;
             ctime(util::time());
         }
 
-        void entry_t::user(uid_t user) {
+        void entry_t::user(fuse_fuse_uid_t user) {
             _user = user;
             ctime(util::time());
         }
 
-        void entry_t::group(gid_t group) {
+        void entry_t::group(fuse_gid_t group) {
             _group = group;
             ctime(util::time());
         }

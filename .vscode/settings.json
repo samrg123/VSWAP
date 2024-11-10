@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "*.embeddedhtml": "html",
+        "*.logcat": "logcat",
+        "limits": "cpp",
+        "charconv": "cpp",
+        "string": "cpp",
+        "xlocnum": "cpp",
+        "ios": "cpp",
+        "memory": "cpp",
+        "xutility": "cpp"
+    }
+}

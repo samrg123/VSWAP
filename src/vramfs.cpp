@@ -1,7 +1,9 @@
 // Third-party libraries
 #define FUSE_USE_VERSION 30
-#include <fuse.h>
-#include <unistd.h>
+#include <fuse3/fuse.h>
+#include <fuse3/winfsp_fuse.h>
+
+#include <statTypes.h>
 
 // Standard library
 #include <iostream>
@@ -9,7 +11,6 @@
 #include <cstdint>
 #include <limits>
 #include <regex>
-#include <sys/mman.h>
 
 // Internal dependencies
 #include "vramfs.hpp"
@@ -34,26 +35,35 @@ static entry::dir_ref root_entry;
 
 static void* vram_init(fuse_conn_info* conn, fuse_config*) {
     root_entry = entry::dir_t::make(nullptr, "");
-    root_entry->user(geteuid());
-    root_entry->group(getegid());
+    
+     fuse_context* context = fuse_get_context();
+     //root_entry->user(context->uid);
+     //root_entry->group(context->gid);
+
+    //root_entry->user(0);
+    //root_entry->group(0);
 
     std::cout << "mounted." << std::endl;
 
-    return nullptr;
+    return context->private_data;
+    //return nullptr;
 }
 
 /*
  * File system info
  */
 
-static int vram_statfs(const char*, struct statvfs* vfs) {
+static int vram_statfs(const char*, struct fuse_statvfs* vfs) {
     vfs->f_bsize = memory::block::size;
     vfs->f_blocks = memory::pool_size();
     vfs->f_bfree = memory::pool_available();
     vfs->f_bavail = memory::pool_available();
     vfs->f_files = entry::count();
-    vfs->f_ffree = std::numeric_limits<fsfilcnt_t>::max();
+    vfs->f_ffree = std::numeric_limits<fuse_fsfilcnt_t>::max();
     vfs->f_namemax = std::numeric_limits<unsigned long>::max();
+
+    //vfs->f_favail = std::numeric_limits<fuse_fsfilcnt_t>::max();
+    vfs->f_frsize = memory::block::size;
 
     return 0;
 }
@@ -62,7 +72,7 @@ static int vram_statfs(const char*, struct statvfs* vfs) {
  * Entry attributes
  */
 
-static int vram_getattr(const char* path, struct stat* stbuf, fuse_file_info*) {
+static int vram_getattr(const char* path, struct fuse_stat* stbuf, fuse_file_info*) {
     lock_guard<mutex> local_lock(fsmutex);
 
     // Look up entry
@@ -70,7 +80,7 @@ static int vram_getattr(const char* path, struct stat* stbuf, fuse_file_info*) {
     int err = root_entry->find(path, entry);
     if (err != 0) return err;
 
-    memset(stbuf, 0, sizeof(struct stat));
+    memset(stbuf, 0, sizeof(struct fuse_stat));
 
     if (entry->type() == entry::type::dir) {
         stbuf->st_mode = S_IFDIR | entry->mode();
@@ -88,8 +98,14 @@ static int vram_getattr(const char* path, struct stat* stbuf, fuse_file_info*) {
         stbuf->st_nlink = 1;
     }
 
-    stbuf->st_uid = entry->user();
-    stbuf->st_gid = entry->group();
+
+    // TODO: Replace this with code that sets root_node permissions correctly in vram_init!!!
+    // stbuf->st_uid = entry->user();
+    // stbuf->st_gid = entry->group();
+    auto context = fuse3_get_context();
+    stbuf->st_uid = context->uid;
+    stbuf->st_gid = context->gid;
+
     stbuf->st_size = entry->size();
     stbuf->st_atim = entry->atime();
     stbuf->st_mtim = entry->mtime();
@@ -119,7 +135,7 @@ static int vram_readlink(const char* path, char* buf, size_t size) {
  * Set the mode bits of an entry
  */
 
-static int vram_chmod(const char* path, mode_t mode, fuse_file_info*) {
+static int vram_chmod(const char* path, fuse_fuse_mode_t mode, fuse_file_info*) {
     lock_guard<mutex> local_lock(fsmutex);
 
     entry::entry_ref entry;
@@ -134,8 +150,7 @@ static int vram_chmod(const char* path, mode_t mode, fuse_file_info*) {
 /*
  * Change the owner/group of an entry
  */
-
-static int vram_chown(const char* path, uid_t user, gid_t group, fuse_file_info*) {
+static int vram_chown(const char* path, fuse_fuse_uid_t user, fuse_gid_t group, fuse_file_info*) {
     lock_guard<mutex> lock_lock(fsmutex);
 
     entry::entry_ref entry;
@@ -152,7 +167,7 @@ static int vram_chown(const char* path, uid_t user, gid_t group, fuse_file_info*
  * Set the last access and last modified times of an entry
  */
 
-static int vram_utimens(const char* path, const timespec tv[2], fuse_file_info*) {
+static int vram_utimens(const char* path, const fuse_timespec tv[2], fuse_file_info*) {
     lock_guard<mutex> local_lock(fsmutex);
 
     entry::entry_ref entry;
@@ -168,8 +183,7 @@ static int vram_utimens(const char* path, const timespec tv[2], fuse_file_info*)
 /*
  * Directory listing
  */
-
-static int vram_readdir(const char* path, void* buf, fuse_fill_dir_t filler, off_t, fuse_file_info*, fuse_readdir_flags) {
+static int vram_readdir(const char* path, void* buf, fuse_fill_dir_t filler, fuse_off_t, fuse_file_info*, fuse_readdir_flags) {
     lock_guard<mutex> local_lock(fsmutex);
 
     // Look up directory
@@ -193,7 +207,9 @@ static int vram_readdir(const char* path, void* buf, fuse_fill_dir_t filler, off
  * Create file
  */
 
-static int vram_create(const char* path, mode_t, struct fuse_file_info* fi) {
+static int vram_create(const char* path, fuse_fuse_mode_t, struct fuse_file_info* fi) {
+    //printf("vram_create\n");
+    
     lock_guard<mutex> local_lock(fsmutex);
 
     // Truncate any existing file entry or fail if it's another type
@@ -227,7 +243,7 @@ static int vram_create(const char* path, mode_t, struct fuse_file_info* fi) {
  * Create directory
  */
 
-static int vram_mkdir(const char* path, mode_t) {
+static int vram_mkdir(const char* path, fuse_fuse_mode_t) {
     lock_guard<mutex> local_lock(fsmutex);
 
     // Fail if entry with that name already exists
@@ -359,6 +375,7 @@ static int vram_rename(const char* path, const char* new_path, unsigned int) {
  */
 
 static int vram_open(const char* path, fuse_file_info* fi) {
+    //printf("vram_open\n");
     lock_guard<mutex> local_lock(fsmutex);
 
     entry::entry_ref entry;
@@ -375,7 +392,9 @@ static int vram_open(const char* path, fuse_file_info* fi) {
  * Read file
  */
 
-static int vram_read(const char* path, char* buf, size_t size, off_t off, fuse_file_info* fi) {
+static int vram_read(const char* path, char* buf, size_t size, fuse_off_t off, fuse_file_info* fi) {
+    //printf("vram_read\n");
+
     lock_guard<mutex> local_lock(fsmutex);
 
     file_session* session = reinterpret_cast<file_session*>(fi->fh);
@@ -386,7 +405,8 @@ static int vram_read(const char* path, char* buf, size_t size, off_t off, fuse_f
  * Write file
  */
 
-static int vram_write(const char* path, const char* buf, size_t size, off_t off, fuse_file_info* fi) {
+static int vram_write(const char* path, const char* buf, size_t size, fuse_off_t off, fuse_file_info* fi) {
+    //printf("vram_write\n");
     lock_guard<mutex> local_lock(fsmutex);
 
     file_session* session = reinterpret_cast<file_session*>(fi->fh);
@@ -422,7 +442,7 @@ static int vram_release(const char* path, fuse_file_info* fi) {
  * Change file size
  */
 
-static int vram_truncate(const char* path, off_t size, fuse_file_info*) {
+static int vram_truncate(const char* path, fuse_off_t size, fuse_file_info*) {
     lock_guard<mutex> local_lock(fsmutex);
 
     entry::entry_ref entry;
@@ -513,7 +533,7 @@ static size_t parse_size(const string& param) {
 
 int main(int argc, char* argv[]) {
     // Check parameter and parse parameters
-    if (argc < 3 || argc > 6) return print_help();
+    if (argc < 3) return print_help();
     if (!std::regex_match(argv[2], size_regex)) return print_help();
     if (argc == 4 && strcmp(argv[3], "-f") != 0) return print_help();
     if (argc == 5 && strcmp(argv[3], "-d") != 0) return print_help();
@@ -530,10 +550,10 @@ int main(int argc, char* argv[]) {
         memory::set_device(atoi(argv[4]));
     }
 
-    // Lock process pages in memory to prevent them from being swapped
-    if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
-        std::cerr << "failed to lock process pages in memory, vramfs may freeze if swapped" << std::endl;
-    }
+    // // Lock process pages in memory to prevent them from being swapped
+    // if (mlockall(MCL_CURRENT | MCL_FUTURE)) {
+    //     std::cerr << "failed to lock process pages in memory, vramfs may freeze if swapped" << std::endl;
+    // }
 
     // Check for OpenCL supported GPU and allocate memory
     if (!memory::is_available()) {

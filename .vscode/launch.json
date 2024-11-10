@@ -1,0 +1,35 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch",
+            // "preLaunchTask": "prepare launch",
+            "type": "cppvsdbg",
+            "request": "launch",
+            // "program": "${workspaceFolder}/build/vramfs*.exe",
+            "program": "${workspaceFolder}/build/vramfs_x64_debug.exe",
+            // "args": ["/tmp/vram", "10M", "-d", "1", "-f"],
+            "args": ["${workspaceFolder}/tmp/vram", "2048M", "-d", "0", "-f"],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            // "setupCommands": [
+            //     {
+            //         "description": "Enable pretty-printing for gdb",
+            //         "text": "-enable-pretty-printing",
+            //         "ignoreFailures": true
+            //     },
+            //     {
+            //         "description": "Set Disassembly Flavor to Intel",
+            //         "text": "-gdb-set disassembly-flavor intel",
+            //         "ignoreFailures": true
+            //     }
+            // ]
+        }
+
+    ]
+}
