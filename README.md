@@ -1,3 +1,9 @@
+# Welcome to the VSWAP Repo!
+
+VSWAP is a extension to the original [vramfs project](https://github.com/Overv/vramfs) to add support for Windows.
+See the original README below:
+
+
 vramfs
 ======
 
